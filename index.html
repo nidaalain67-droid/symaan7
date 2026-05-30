@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYMAAN | Enterprise Workforce Solutions</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            950: '#030a16',
+                            900: '#0a192f', // Deep Corporate Navy
+                            800: '#112240',
+                            700: '#1e3a8a',
+                            600: '#1d4ed8', // Royal Blue
+                            500: '#2563eb', // Core Blue
+                            400: '#3b82f6',
+                            300: '#93c5fd',
+                            100: '#e0e7ff'
+                        },
+                        accent: '#f59e0b', // Trust Amber
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; overflow-x: hidden; }
+        h1, h2, h3, h4, h5, h6, .font-heading { font-family: 'Space Grotesk', sans-serif; }
+        
+        /* 3D Canvas Background */
+        #webgl-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none; /* Let clicks pass through to content */
+            background: linear-gradient(to bottom right, #0a192f, #112240);
+        }
+
+        /* Glassmorphism utilities */
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .glass-dark {
+            background: rgba(10, 25, 47, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Reveal Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Bento Grid Hover with smooth scaling */
+        .bento-card {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+        }
+        .bento-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.15);
+            border-color: #2563eb;
+        }
+        .bento-card img {
+            transition: transform 0.6s ease;
+        }
+        .bento-card:hover img {
+            transform: scale(1.06);
+        }
+
+        /* Horizontal Card Scroller for Locations */
+        .location-scroller::-webkit-scrollbar {
+            height: 6px;
+        }
+        .location-scroller::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+        .location-scroller::-webkit-scrollbar-thumb {
+            background: rgba(37, 99, 235, 0.2);
+            border-radius: 10px;
+        }
+        .location-scroller::-webkit-scrollbar-thumb:hover {
+            background: rgba(37, 99, 235, 0.4);
+        }
+
+        /* Timeline styling */
+        .timeline-line {
+            width: 2px;
+            background: #e2e8f0;
+            position: absolute;
+            left: 24px;
+            top: 0;
+            bottom: 0;
+            z-index: 0;
+        }
+
+        .whatsapp-float { animation: pulse-green 2s infinite; }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(37, 211, 102, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); }
+        }
+
+        /* Form Inputs */
+        .form-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: rgba(255, 255, 255, 0.1);
+        }
+    </style>
+    <script>
+        // Custom error handler to replace broken images with stunning inline SVG fallbacks
+        function handleLogoError(imgElement, type) {
+            imgElement.style.display = 'none';
+            const parent = imgElement.parentElement;
+            if (!parent) return;
+
+            if (parent.querySelector('.svg-fallback-active')) return;
+
+            let fallbackHtml = '';
+            
+            if (type === 'nav') {
+                fallbackHtml = `
+                    <div class="svg-fallback-active flex items-center justify-center w-10 h-10 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-xl shadow-md border border-white/20">
+                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>`;
+            } else if (type === 'hero' || type === 'front-brand') {
+                fallbackHtml = `
+                    <div class="svg-fallback-active flex flex-col items-center justify-center w-full max-w-[400px] aspect-square rounded-[2rem] bg-brand-800 border border-white/10 p-8 shadow-[0_0_50px_rgba(59,130,246,0.2)]">
+                        <svg class="w-32 h-32 text-brand-400 animate-pulse mb-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <h3 class="text-3xl font-heading font-extrabold text-white tracking-widest">SYMAAN</h3>
+                        <p class="text-brand-400 font-semibold tracking-wider text-sm mt-2 uppercase">Manpower Suppliers</p>
+                    </div>`;
+            } else if (type === 'footer') {
+                fallbackHtml = `
+                    <div class="svg-fallback-active flex items-center justify-center w-16 h-16 bg-gradient-to-tr from-brand-600 to-brand-400 rounded-2xl shadow-lg border border-white/10">
+                        <svg class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>`;
+            }
+
+            parent.insertAdjacentHTML('beforeend', fallbackHtml);
+        }
+    </script>
+</head>
+<body class="text-gray-800 antialiased selection:bg-brand-500 selection:text-white bg-slate-50">
+
+    <!-- NAVIGATION BAR -->
+    <nav class="fixed w-full z-50 transition-all duration-500 py-4" id="navbar">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="glass rounded-full px-6 py-3 flex justify-between items-center shadow-lg border border-white/20 bg-white/10 backdrop-blur-md" id="nav-container">
+                <div class="flex items-center cursor-pointer gap-3" onclick="window.scrollTo(0,0)">
+                    <div class="flex items-center justify-center">
+                        <img src="WhatsApp Image 2026-05-30 at 2.41.04 PM (1).jpeg" alt="SYMAAN Logo" class="h-10 sm:h-14 rounded bg-white p-1.5 shadow-sm object-contain" onerror="handleLogoError(this, 'nav')">
+                    </div>
+                </div>
+
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#about" class="text-gray-200 hover:text-white font-medium transition-colors text-sm uppercase tracking-wider nav-link">Overview</a>
+                    <a href="#services" class="text-gray-200 hover:text-white font-medium transition-colors text-sm uppercase tracking-wider nav-link">Services</a>
+                    <a href="#metrics" class="text-gray-200 hover:text-white font-medium transition-colors text-sm uppercase tracking-wider nav-link">Performance</a>
+                    <a href="#locations" class="text-gray-200 hover:text-white font-medium transition-colors text-sm uppercase tracking-wider nav-link">Coverage</a>
+                    <a href="#process" class="text-gray-200 hover:text-white font-medium transition-colors text-sm uppercase tracking-wider nav-link">Process</a>
+                    <a href="#contact-end" class="bg-brand-600 hover:bg-brand-500 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-bolt"></i> Deploy Now
+                    </a>
+                </div>
+
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-menu-btn" class="text-white focus:outline-none p-2 transition-colors">
+                        <i class="fa-solid fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mobile-menu" class="hidden md:hidden absolute top-24 left-4 right-4 glass-dark rounded-2xl border border-gray-700 shadow-2xl p-4">
+            <div class="space-y-2 text-center">
+                <a href="#about" class="block px-3 py-3 text-white font-medium rounded-lg hover:bg-white/10">Overview</a>
+                <a href="#services" class="block px-3 py-3 text-white font-medium rounded-lg hover:bg-white/10">Services</a>
+                <a href="#metrics" class="block px-3 py-3 text-white font-medium rounded-lg hover:bg-white/10">Performance</a>
+                <a href="#locations" class="block px-3 py-3 text-white font-medium rounded-lg hover:bg-white/10">Coverage</a>
+                <a href="#process" class="block px-3 py-3 text-white font-medium rounded-lg hover:bg-white/10">Process</a>
+                <a href="https://wa.me/916366861970" target="_blank" class="block w-full mt-4 bg-[#25D366] text-white px-5 py-3 rounded-lg font-bold shadow-md">
+                    <i class="fab fa-whatsapp mr-2"></i> Message on WhatsApp
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section id="home" class="relative min-h-screen flex items-center pt-20 overflow-hidden">
+        <div id="webgl-container"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col lg:flex-row items-center justify-between gap-12 py-12">
+            
+            <!-- Left Brand Column (Front Page) -->
+            <div class="w-full lg:w-1/2 text-left">
+                <!-- Large Corporate Logo on Front Page -->
+                <div class="mb-8 reveal inline-block">
+                    <div class="bg-white p-4 rounded-3xl shadow-[0_4px_30px_rgba(255,255,255,0.15)] border border-white/15">
+                        <img src="WhatsApp Image 2026-05-30 at 2.41.04 PM (1).jpeg" alt="SYMAAN Manpower Suppliers" class="h-16 sm:h-20 w-auto object-contain" onerror="handleLogoError(this, 'front-brand')">
+                    </div>
+                </div>
+
+                <span class="inline-block px-4 py-1.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/30 text-sm font-semibold tracking-wider uppercase mb-6 reveal">
+                    Verified Enterprise Workforce Supplier
+                </span>
+                
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold text-white leading-[1.1] mb-6 reveal" style="transition-delay: 100ms;">
+                    Reliable Talent.<br>Uncompromising Standards.
+                </h1>
+
+                <p class="text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-blue-200 font-bold reveal" style="transition-delay: 150ms;">
+                    Comprehensive Facility, Housekeeping & Project-Scale Support
+                </p>
+                
+                <p class="mt-6 text-lg md:text-xl text-gray-300 font-light max-w-xl reveal border-l-4 border-brand-500 pl-6" style="transition-delay: 200ms;">
+                    Rigorously pre-vetted, disciplined, and thoroughly trained personnel ready for rapid deployment to maintain smooth commercial fit-outs, handover preparations, and corporate operations.
+                </p>
+                
+                <div class="mt-10 flex flex-col sm:flex-row gap-4 reveal" style="transition-delay: 300ms;">
+                    <a href="#services" class="bg-white text-brand-900 hover:bg-gray-100 px-8 py-4 rounded-full font-bold text-lg transition-all shadow-xl text-center flex items-center justify-center gap-2">
+                        Explore Services <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                    <a href="https://wa.me/916366861970?text=Hello%20SYMAAN.%20I%20am%20looking%20for%20workforce%20support." target="_blank" class="glass text-white border border-white/30 hover:bg-white/10 px-8 py-4 rounded-full font-bold text-lg transition-all text-center flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-phone"></i> +91 6366861970
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Visual Column -->
+            <div class="w-full lg:w-1/2 flex justify-center lg:justify-end reveal order-first lg:order-last">
+                <div class="relative group">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-brand-500 to-blue-400 rounded-[2.5rem] blur opacity-30 group-hover:opacity-60 transition duration-1000"></div>
+                    <div class="relative flex items-center justify-center w-full">
+                        <!-- Elegant High-End Enterprise Office Space Image -->
+                        <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80" alt="Corporate Enterprise Infrastructure" class="relative w-full max-w-[320px] sm:max-w-[450px] md:max-w-[550px] rounded-[2rem] shadow-[0_0_50px_rgba(255,255,255,0.15)] transition-transform duration-500 hover:scale-105 object-cover aspect-video lg:aspect-square">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center reveal" style="transition-delay: 500ms;">
+            <span class="text-white/60 text-xs tracking-widest uppercase mb-2">Scroll</span>
+            <div class="w-[1px] h-12 bg-white/20 relative overflow-hidden">
+                <div class="w-full h-1/2 bg-white absolute top-0 animate-[shimmer_2s_infinite]"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PREMIUM STATS SECTION (Pronto-Style Premium Look) -->
+    <section id="metrics" class="py-20 bg-white relative z-20 border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12 reveal">
+                <span class="text-brand-600 font-bold tracking-widest uppercase text-sm mb-3 block">Performance & Trust</span>
+                <h2 class="text-3xl md:text-4xl font-heading font-extrabold text-brand-900">Enterprise Metrics in Action</h2>
+                <p class="text-gray-500 mt-2">Delivering dependable scaling capabilities with data-driven service performance.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Stat Card 1 -->
+                <div class="group relative overflow-hidden rounded-3xl p-8 bg-[#f2faf5] border border-emerald-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-100/30 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-14 h-14 bg-emerald-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-emerald-500/20">
+                            <i class="fa-solid fa-user-shield"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Workforce Strength</p>
+                            <h3 class="text-4xl font-heading font-black text-brand-900 mt-1">200+</h3>
+                        </div>
+                    </div>
+                    <p class="text-brand-900 font-bold text-lg mb-2">Verified Professionals</p>
+                    <p class="text-gray-600 text-sm">Background-checked, highly disciplined, and rigorously trained professionals aligned to client compliance guidelines.</p>
+                </div>
+
+                <!-- Stat Card 2 -->
+                <div class="group relative overflow-hidden rounded-3xl p-8 bg-[#f4f7fe] border border-blue-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-blue-100/30 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-14 h-14 bg-brand-600 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-blue-600/20">
+                            <i class="fa-solid fa-building-circle-check"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Client Portfolio</p>
+                            <h3 class="text-4xl font-heading font-black text-brand-900 mt-1">32+</h3>
+                        </div>
+                    </div>
+                    <p class="text-brand-900 font-bold text-lg mb-2">Corporate Enterprise Clients</p>
+                    <p class="text-gray-600 text-sm">Empowering large commercial operators, logistics hubs, retail spaces, and corporate offices with consistent, high-tier personnel.</p>
+                </div>
+
+                <!-- Stat Card 3 -->
+                <div class="group relative overflow-hidden rounded-3xl p-8 bg-[#faf6f0] border border-amber-100 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-amber-100/30 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-14 h-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg shadow-amber-500/20">
+                            <i class="fa-solid fa-hourglass-half"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-xs font-semibold uppercase tracking-wider">Productivity Delivered</p>
+                            <h3 class="text-4xl font-heading font-black text-brand-900 mt-1">16,000+</h3>
+                        </div>
+                    </div>
+                    <p class="text-brand-900 font-bold text-lg mb-2">Total Productive Man-Hours</p>
+                    <p class="text-gray-600 text-sm">Successfully logged clean, precise hours in professional site handovers, maintenance, facility care, and logistic operations.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- OVERVIEW SECTION -->
+    <section id="about" class="py-24 bg-white relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+                <div class="reveal">
+                    <span class="text-brand-600 font-bold tracking-widest uppercase text-sm mb-4 block">Company Overview</span>
+                    <h2 class="text-4xl md:text-5xl font-heading font-extrabold text-brand-900 mb-8 leading-tight">
+                        Premium Workforce Optimization for <span class="text-brand-600">Enterprise Operations</span>
+                    </h2>
+                    <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&w=800&q=80" alt="Professional Facility Workforce" class="w-full h-64 object-cover rounded-3xl shadow-lg mb-8">
+                    <div class="prose prose-lg text-gray-600 max-w-none">
+                        <p class="mb-6 font-medium text-gray-800">
+                            We provide robust and highly specialized manpower support for interior fit-out deployments, high-traffic facility oversight, logistics operations, and post-construction prepare-to-handover cycles.
+                        </p>
+                        <p class="mb-6">
+                            Our team is recognized as a strategic resource supplier specializing in facility coordination, comprehensive deep sanitation protocols, high-facade maintenance, landscape preservation, and critical event-scale logistics support.
+                        </p>
+                        <p class="mb-6">
+                            Our standard centers around introducing highly disciplined, process-oriented personnel, empowering corporate builders and facility heads to manage timelines seamlessly, control visual consistency, and optimize overheads.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-8 reveal" style="transition-delay: 200ms;">
+                    <div class="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl transition-shadow relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-100 rounded-bl-full -mr-8 -mt-8 opacity-50"></div>
+                        <div class="w-14 h-14 bg-brand-600 text-white rounded-2xl flex items-center justify-center text-2xl mb-6 relative z-10 shadow-lg">
+                            <i class="fa-solid fa-eye"></i>
+                        </div>
+                        <h3 class="text-2xl font-heading font-bold text-brand-900 mb-4 relative z-10">Our Vision</h3>
+                        <p class="text-gray-600 relative z-10">To solidify our reputation as the nation's premier enterprise-level workforce partner, known for absolute promptness and high behavioral training metrics in commercial development programs.</p>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-3xl p-8 border border-gray-100 hover:shadow-xl transition-shadow relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-100 rounded-bl-full -mr-8 -mt-8 opacity-50"></div>
+                        <div class="w-14 h-14 bg-brand-600 text-white rounded-2xl flex items-center justify-center text-2xl mb-6 relative z-10 shadow-lg">
+                            <i class="fa-solid fa-bullseye"></i>
+                        </div>
+                        <h3 class="text-2xl font-heading font-bold text-brand-900 mb-4 relative z-10">Our Mission</h3>
+                        <p class="text-gray-600 relative z-10">To seamlessly integrate well-vetted, task-aligned professional units into your active pipelines, mitigating operational delays while emphasizing strict workplace safety standards.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CORE SERVICES -->
+    <section id="services" class="py-24 bg-gray-50 border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16 reveal">
+                <span class="text-brand-600 font-bold tracking-widest uppercase text-sm mb-4 block">Our Services</span>
+                <h2 class="text-4xl md:text-5xl font-heading font-extrabold text-brand-900 mb-6">Core Operational Capabilities</h2>
+                <p class="text-gray-600 text-lg">Delivering custom, responsive workforce allocations across diverse corporate disciplines.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
+                
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=600&q=80" alt="Housekeeping Manpower" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Corporate Housekeeping</h3>
+                            <p class="text-gray-600 text-sm">Organized maintenance, high-tier workspace upkeep, and detailed daily housekeeping oversight.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1601584115197-04ecc0da31d7?auto=format&fit=crop&w=600&q=80" alt="Material Shifting Labour" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Precision Heavy Logistics</h3>
+                            <p class="text-gray-600 text-sm">Efficient physical loading, component transition, safe asset movement, and inventory relocation.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1590069261209-f8e9b8642343?auto=format&fit=crop&w=600&q=80" alt="Debris Clearance" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Site Clean-Up & Debris</h3>
+                            <p class="text-gray-600 text-sm">Rigorous Post-fitout clearing, rubble management, and complete workspace preparation protocols.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=600&q=80" alt="Final Handover Cleaning" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Final Commercial Handover</h3>
+                            <p class="text-gray-600 text-sm">Immaculate pre-occupancy aesthetic polishing tailored for builders and corporate tenants.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&w=600&q=80" alt="Supervisor Support" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Professional Field Supervision</h3>
+                            <p class="text-gray-600 text-sm">Rigid site management, attendance monitoring, productivity reporting, and shift alignment.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80" alt="Security Services" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Corporate Protection Units</h3>
+                            <p class="text-gray-600 text-sm">Alert, disciplined corporate security personnel maintaining robust barrier controls.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1581094288338-2314dddb7ece?auto=format&fit=crop&w=600&q=80" alt="Facility Management" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Integrated Facility Operations</h3>
+                            <p class="text-gray-600 text-sm">Holistic coordination, technical staff distribution, and predictive building upkeep support.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?auto=format&fit=crop&w=600&q=80" alt="Gardening" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Ecosystem Maintenance</h3>
+                            <p class="text-gray-600 text-sm">Professional green-space maintenance, trimming, and premium corporate landscaping.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1613665813446-82a78c468a1d?auto=format&fit=crop&w=600&q=80" alt="Glass Cleaning" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Facade Glass Care</h3>
+                            <p class="text-gray-600 text-sm">Safety-trained architectural glass detailing and multi-story structural washing.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&w=600&q=80" alt="Office Deep Cleaning" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Advanced Workspace Sanitization</h3>
+                            <p class="text-gray-600 text-sm">Chemical-grade deep-clean protocols to sanitize and refresh corporate assets.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1558317374-067fb5f30001?auto=format&fit=crop&w=600&q=80" alt="Carpet Cleaning" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Heavy Carpet Restoration</h3>
+                            <p class="text-gray-600 text-sm">Advanced fiber extraction, conditioning, and rapid-dry deep shampoo operations.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bento-card bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm reveal flex flex-col">
+                    <div class="overflow-hidden h-48">
+                        <img src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=600&q=80" alt="Project Support" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-heading font-bold text-brand-900 mb-2">Adaptive Infrastructure Support</h3>
+                            <p class="text-gray-600 text-sm">On-demand skill augmentation for sudden timelines, event handling, and fit-outs.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- PREMIUM WHERE WE SERVE (Snabbit-style Interactive Explorer) -->
+    <section id="locations" class="py-24 bg-white relative border-t border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16 reveal">
+                <span class="text-brand-600 font-bold tracking-widest uppercase text-sm mb-4 block">National Reach</span>
+                <h2 class="text-4xl md:text-5xl font-heading font-extrabold text-brand-900 mb-4">Strategic Service Coverage</h2>
+                <p class="text-gray-600 text-lg">Seamless workforce deployments across premier economic zones and state capitals.</p>
+            </div>
+
+            <!-- Dynamic Location Panel (Snabbit Mockup) -->
+            <div class="max-w-6xl mx-auto bg-slate-50 rounded-[2.5rem] p-6 sm:p-10 border border-gray-200/60 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-80 h-80 bg-brand-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <h3 class="text-gray-400 font-semibold text-xs tracking-widest uppercase text-center mb-2">WHERE WE SERVE</h3>
+                <h4 class="text-brand-900 font-heading font-bold text-2xl sm:text-3xl text-center mb-8">Select Regional Territory</h4>
+
+                <!-- Horizontal Carousel Selector -->
+                <div class="flex gap-4 overflow-x-auto pb-6 location-scroller snap-x snap-mandatory px-2">
+                    
+                    <!-- Karnataka Card -->
+                    <button id="btn-karnataka" onclick="switchLocation('karnataka', this)" class="location-btn snap-start shrink-0 w-48 bg-white rounded-2xl p-4 border-2 border-brand-500 shadow-md text-left transition-all duration-300 focus:outline-none">
+                        <div class="text-brand-600 font-bold text-sm mb-1">Karnataka State</div>
+                        <div class="text-xs text-gray-500 mb-3">All Districts Cover</div>
+                        <div class="rounded-xl overflow-hidden h-24 bg-slate-100">
+                            <img src="https://images.unsplash.com/photo-1582506691459-7157a41f6e52?auto=format&fit=crop&w=300&q=80" alt="Karnataka" class="w-full h-full object-cover">
+                        </div>
+                    </button>
+
+                    <!-- Bangalore Card -->
+                    <button onclick="switchLocation('bangalore', this)" class="location-btn snap-start shrink-0 w-48 bg-white rounded-2xl p-4 border-2 border-transparent shadow-sm hover:border-brand-200 text-left transition-all duration-300 focus:outline-none">
+                        <div class="text-brand-900 font-bold text-sm mb-1">Bengaluru Hub</div>
+                        <div class="text-xs text-gray-500 mb-3">12 Core Sectors</div>
+                        <div class="rounded-xl overflow-hidden h-24 bg-slate-100">
+                            <img src="https://images.unsplash.com/photo-1596176530529-78163a4f7af2?auto=format&fit=crop&w=300&q=80" alt="Bangalore" class="w-full h-full object-cover">
+                        </div>
+                    </button>
+
+                    <!-- Chennai Card -->
+                    <button onclick="switchLocation('chennai', this)" class="location-btn snap-start shrink-0 w-48 bg-white rounded-2xl p-4 border-2 border-transparent shadow-sm hover:border-brand-200 text-left transition-all duration-300 focus:outline-none">
+                        <div class="text-brand-900 font-bold text-sm mb-1">Chennai</div>
+                        <div class="text-xs text-gray-500 mb-3">10 Major Zones</div>
+                        <div class="rounded-xl overflow-hidden h-24 bg-slate-100">
+                            <img src="https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=300&q=80" alt="Chennai" class="w-full h-full object-cover">
+                        </div>
+                    </button>
+
+                    <!-- Hyderabad Card -->
+                    <button onclick="switchLocation('hyderabad', this)" class="location-btn snap-start shrink-0 w-48 bg-white rounded-2xl p-4 border-2 border-transparent shadow-sm hover:border-brand-200 text-left transition-all duration-300 focus:outline-none">
+                        <div class="text-brand-900 font-bold text-sm mb-1">Hyderabad</div>
+                        <div class="text-xs text-gray-500 mb-3">10 Core Tech Zones</div>
+                        <div class="rounded-xl overflow-hidden h-24 bg-slate-100">
+                            <img src="https://images.unsplash.com/photo-1605001011156-cbf0b0f67a51?auto=format&fit=crop&w=300&q=80" alt="Hyderabad" class="w-full h-full object-cover">
+                        </div>
+                    </button>
+
+                    <!-- Kochi Card -->
+                    <button onclick="switchLocation('kochin', this)" class="location-btn snap-start shrink-0 w-48 bg-white rounded-2xl p-4 border-2 border-transparent shadow-sm hover:border-brand-200 text-left transition-all duration-300 focus:outline-none">
+                        <div class="text-brand-900 font-bold text-sm mb-1">Kochi</div>
+                        <div class="text-xs text-gray-500 mb-3">10 Key Port Zones</div>
+                        <div class="rounded-xl overflow-hidden h-24 bg-slate-100">
+                            <img src="https://images.unsplash.com/photo-1589136775551-3c223146b384?auto=format&fit=crop&w=300&q=80" alt="Kochi" class="w-full h-full object-cover">
+                        </div>
+                    </button>
+
+                    <!-- Mumbai Card -->
+                    <button onclick="switchLocation('mumbai', this)" class="location-btn snap-start shrink-0 w-48 bg-white rounded-2xl p-4 border-2 border-transparent shadow-sm hover:border-brand-200 text-left transition-all duration-300 focus:outline-none">
+                        <div class="text-brand-900 font-bold text-sm mb-1">Mumbai</div>
+                        <div class="text-xs text-gray-500 mb-3">11 Premium Sectors</div>
+                        <div class="rounded-xl overflow-hidden h-24 bg-slate-100">
+                            <img src="https://images.unsplash.com/photo-1562979314-bee7453e911c?auto=format&fit=crop&w=300&q=80" alt="Mumbai" class="w-full h-full object-cover">
+                        </div>
+                    </button>
+
+                    <!-- Pune Card -->
+                    <button onclick="switchLocation('pune', this)" class="location-btn snap-start shrink-0 w-48 bg-white rounded-2xl p-4 border-2 border-transparent shadow-sm hover:border-brand-200 text-left transition-all duration-300 focus:outline-none">
+                        <div class="text-brand-900 font-bold text-sm mb-1">Pune</div>
+                        <div class="text-xs text-gray-500 mb-3">10 IT & Industrial Areas</div>
+                        <div class="rounded-xl overflow-hidden h-24 bg-slate-100">
+                            <img src="https://images.unsplash.com/photo-1601999109332-542b18dbec57?auto=format&fit=crop&w=300&q=80" alt="Pune" class="w-full h-full object-cover">
+                        </div>
+                    </button>
+
+                </div>
+
+                <!-- Live Dynamic Grid Area Panel -->
+                <div class="mt-8 bg-white rounded-2xl border border-gray-100 p-6 sm:p-8 shadow-inner relative z-10 transition-all duration-500">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-gray-100 pb-4 mb-6">
+                        <div>
+                            <h4 id="serving-header" class="text-xl font-heading font-extrabold text-brand-900">
+                                Serving <span class="text-brand-600 font-bold">All Districts & Cities</span> in Karnataka
+                            </h4>
+                            <p id="serving-sub" class="text-sm text-gray-500 mt-1">Providing state-wide logistics & facility management teams.</p>
+                        </div>
+                        <a href="#contact-end" class="text-xs text-brand-600 font-bold hover:text-brand-700 hover:underline tracking-wider uppercase mt-3 sm:mt-0 flex items-center gap-1">
+                            Deploy There <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <!-- Dyn Grid list containing area chips -->
+                    <div id="area-chips" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-center">
+                        <!-- Defaulting to Karnataka Districts -->
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Davanagere</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Bengaluru</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Mysuru</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Hubli-Dharwad</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Mangaluru</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Belagavi</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Kalaburagi</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Shivamogga</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Tumakuru</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Udupi</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Ballari</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Vijayapura</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Hassan</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Mandya</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Bidar</div>
+                        <div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">Chikmagalur</div>
+                    </div>
+                </div>
+
+                <div class="text-center mt-6">
+                    <span class="text-xs text-gray-400">Can't spot your designated zone? <a href="#contact-end" class="text-brand-600 hover:underline">Contact our coordination desk</a> for customized territorial solutions.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- WORK PROCESS SECTION -->
+    <section id="process" class="py-24 bg-white border-t border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16">
+                
+                <div class="reveal">
+                    <h2 class="text-3xl font-heading font-bold text-brand-900 mb-10">Our Operational Lifecycle</h2>
+                    <div class="relative pl-6 space-y-8">
+                        <div class="timeline-line"></div>
+                        
+                        <div class="relative z-10 flex items-start gap-6 bg-gray-50 p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0 shadow-md">1</div>
+                            <div class="pt-2">
+                                <h4 class="font-bold text-brand-900">Exhaustive Resource Blueprinting</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Assessing client workflow parameters and personnel qualifications.</p>
+                            </div>
+                        </div>
+                        <div class="relative z-10 flex items-start gap-6 bg-gray-50 p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0 shadow-md">2</div>
+                            <div class="pt-2">
+                                <h4 class="font-bold text-brand-900">Dynamic Shift Scheduling & Assignment</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Formulating optimal personnel tiers for uninterrupted support cycles.</p>
+                            </div>
+                        </div>
+                        <div class="relative z-10 flex items-start gap-6 bg-gray-50 p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0 shadow-md">3</div>
+                            <div class="pt-2">
+                                <h4 class="font-bold text-brand-900">Guaranteed On-Site Deployment</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Punctual execution under strict, managed transit logistics.</p>
+                            </div>
+                        </div>
+                        <div class="relative z-10 flex items-start gap-6 bg-gray-50 p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0 shadow-md">4</div>
+                            <div class="pt-2">
+                                <h4 class="font-bold text-brand-900">Supervisory Compliance Tracking</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Active shift tracking led by dedicated field operations lead.</p>
+                            </div>
+                        </div>
+                        <div class="relative z-10 flex items-start gap-6 bg-gray-50 p-4 rounded-xl shadow-sm border border-gray-100">
+                            <div class="w-10 h-10 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center shrink-0 shadow-md">5</div>
+                            <div class="pt-2">
+                                <h4 class="font-bold text-brand-900">Daily Performance Auditing</h4>
+                                <p class="text-xs text-gray-500 mt-0.5">Submitting real-time shift logs and task completion matrices.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="reveal" style="transition-delay: 200ms;">
+                    <div class="mb-12">
+                        <h2 class="text-3xl font-heading font-bold text-brand-900 mb-6">Unmatched Safety & Protocol Alignment</h2>
+                        <div class="prose text-gray-600">
+                            <p class="mb-4">At SYMAAN, physical safety and corporate protocol alignment guide our operations. Our workforce groups undergo intense preparatory drills, keeping them perfectly safety-conscious, respectful, and well-integrated into complex construction and enterprise workspaces.</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h2 class="text-3xl font-heading font-bold text-brand-900 mb-6">Our Core Strengths</h2>
+                        <div class="space-y-4">
+                            <div class="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
+                                <h4 class="font-bold text-brand-900 mb-1"><i class="fa-solid fa-users-gear text-brand-500 mr-2"></i> Experienced Workforce</h4>
+                                <p class="text-sm text-gray-600">Professionally trained, vetted manpower equipped for physical labor and specialized cleaning roles.</p>
+                            </div>
+                            <div class="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
+                                <h4 class="font-bold text-brand-900 mb-1"><i class="fa-solid fa-truck-fast text-brand-500 mr-2"></i> Swift Mobilization Matrix</h4>
+                                <p class="text-sm text-gray-600">Immediate adjustments and replacement services optimized for tight timelines.</p>
+                            </div>
+                            <div class="bg-gray-50 p-5 rounded-xl border border-gray-100 shadow-sm">
+                                <h4 class="font-bold text-brand-900 mb-1"><i class="fa-solid fa-map-location-dot text-brand-500 mr-2"></i> Extensive Multi-Regional Reach</h4>
+                                <p class="text-sm text-gray-600">Connecting major Southern and Western economic zones under a single reliable point of contact.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- INQUIRY & CONTACT SECTION -->
+    <section id="contact-end" class="relative py-24 bg-brand-900 overflow-hidden">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full border-2 border-brand-500 blur-3xl"></div>
+            <div class="absolute -bottom-24 -left-24 w-96 h-96 rounded-full border-2 border-brand-400 blur-3xl"></div>
+            <div class="absolute inset-0" style="background-image: radial-gradient(#3b82f6 1px, transparent 1px); background-size: 40px 40px; opacity: 0.1;"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 reveal">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center glass-dark rounded-[2.5rem] p-8 md:p-16 border border-white/10 shadow-2xl">
+                
+                <div>
+                    <span class="inline-block px-4 py-1 rounded-full bg-brand-600/30 text-brand-300 font-bold text-sm tracking-widest uppercase mb-6 border border-brand-500/30">
+                        Initiate Workforce Onboarding
+                    </span>
+                    
+                    <h2 class="text-4xl md:text-5xl lg:text-6xl font-heading font-extrabold text-white mb-6 leading-tight">
+                        Deploy Your <br/>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-white">Team Today.</span>
+                    </h2>
+                    
+                    <p class="text-lg text-gray-300 mb-10">
+                        Connect with our national deployment desk to align resource models with your exact scale demands. Real-time responses across Karnataka, Chennai, Hyderabad, Kochi, Mumbai, and Pune.
+                    </p>
+
+                    <div class="space-y-6 text-left">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-[#25D366] text-2xl shrink-0"><i class="fab fa-whatsapp"></i></div>
+                            <div>
+                                <h5 class="text-white font-bold">WhatsApp / Direct Line</h5>
+                                <p class="text-gray-400 text-lg">+91 6366861970</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-brand-400 text-xl shrink-0"><i class="fa-solid fa-envelope"></i></div>
+                            <div>
+                                <h5 class="text-white font-bold">Email</h5>
+                                <p class="text-gray-400">symaan.suppliers@gmail.com</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white/5 p-8 rounded-2xl border border-white/10 backdrop-blur-md">
+                    <h3 class="text-2xl font-bold text-white mb-6">Send an Inquiry</h3>
+                    <form onsubmit="sendToWhatsApp(event)" class="space-y-4">
+                        <div>
+                            <label for="wa-name" class="block text-sm font-medium text-gray-300 mb-1">Full Name / Enterprise Rep</label>
+                            <input type="text" id="wa-name" required class="form-input" placeholder="e.g. John Doe">
+                        </div>
+                        <div>
+                            <label for="wa-phone" class="block text-sm font-medium text-gray-300 mb-1">Phone Number</label>
+                            <input type="tel" id="wa-phone" required class="form-input" placeholder="e.g. +91 9876543210">
+                        </div>
+                        <div>
+                            <label for="wa-email" class="block text-sm font-medium text-gray-300 mb-1">Email Address</label>
+                            <input type="email" id="wa-email" required class="form-input" placeholder="e.g. john@company.com">
+                        </div>
+                        <div>
+                            <label for="wa-comment" class="block text-sm font-medium text-gray-300 mb-1">Scope of Support / Estimated Manpower</label>
+                            <textarea id="wa-comment" rows="3" required class="form-input resize-none" placeholder="Detail your service requirements or project scope..."></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-[#25D366] hover:bg-[#1fbb59] text-white font-bold py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2 text-lg">
+                            <i class="fab fa-whatsapp"></i> Submit Inquiry on WhatsApp
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-[#050d1a] pt-16 pb-8 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="flex items-center justify-center mb-6">
+                <div class="flex items-center justify-center">
+                    <img src="WhatsApp Image 2026-05-30 at 2.41.04 PM (1).jpeg" alt="SYMAAN Logo" class="h-16 md:h-20 rounded bg-white p-2 object-contain" onerror="handleLogoError(this, 'footer')">
+                </div>
+            </div>
+            
+            <p class="text-gray-400 text-sm max-w-2xl mx-auto mb-8 font-medium">Reliable People. Stronger Projects.<br>Powering Corporate Operations & Major Facility Deliverables.</p>
+            
+            <div class="border-t border-gray-800 pt-8 text-gray-600 text-sm flex flex-col md:flex-row justify-between items-center gap-4">
+                <span>&copy; <script>document.write(new Date().getFullYear())</script> SYMAAN. All rights reserved.</span>
+                <span class="text-gray-500 text-xs">Developed for Enterprise Operations.</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- STICKY FLOATING WHATSAPP -->
+    <a href="https://wa.me/916366861970?text=Hello%20SYMAAN%20Manpower!" 
+       target="_blank" 
+       class="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white w-16 h-16 rounded-full flex items-center justify-center text-3xl shadow-[0_4px_25px_rgba(0,0,0,0.4)] whatsapp-float hover:scale-110 transition-transform duration-300"
+       aria-label="Contact us on WhatsApp">
+        <i class="fab fa-whatsapp"></i>
+    </a>
+
+    <script>
+        
+        // ----------------------------------------------------
+        // DYNAMIC LOCATION EXPLORER (Snabbit-style)
+        // ----------------------------------------------------
+        const karnatakaDistricts = {
+            'Bengaluru': ['Whitefield', 'Koramangala', 'Indiranagar', 'Hebbal', 'Bellandur', 'Brookefield', 'HSR Layout', 'BTM Layout', 'Hoodi', 'Marathahalli', 'Jayanagar', 'JP Nagar', 'Electronic City', 'Yelahanka', 'Malleshwaram'],
+            'Mysuru': ['Gokulam', 'Jayalakshmipuram', 'Kuvempunagar', 'Saraswathipuram', 'Vijayanagar', 'Hebbal Industrial Area', 'Bannimantap', 'Vontikoppal'],
+            'Davanagere': ['MCC B Block', 'PJ Extension', 'Vidyanagar', 'KTJ Nagar', 'Nittuvalli', 'Shamanur Road', 'Harihara', 'Jagalur'],
+            'Hubli-Dharwad': ['Vidya Nagar', 'Navanagar', 'Gokul Road', 'Keshwapur', 'Deshpande Nagar', 'Saptapur', 'Vidyagiri'],
+            'Mangaluru': ['Kodialbail', 'Kadri', 'Bejai', 'Surathkal', 'Pumpwell', 'Kankanady', 'Urwa', 'Kuloor'],
+            'Belagavi': ['Tilakwadi', 'Camp', 'Hindwadi', 'Shahapur', 'Udyambag', 'Gogte Circle'],
+            'Kalaburagi': ['Sedam Road', 'Jewargi Road', 'Super Market Area', 'MSK Mill Area', 'Nehru Gunj'],
+            'Shivamogga': ['Vinobha Nagar', 'Jayanagar', 'Rajendra Nagar', 'Gopala Gowda Extension', 'Ravindra Nagar'],
+            'Tumakuru': ['SIT Extension', 'SS Puram', 'Ashoka Nagar', 'Kyathsandra', 'Batawadi'],
+            'Udupi': ['Manipal', 'Malpe', 'Ambalpady', 'Kadiyali', 'Shiribeedu', 'Brahmagiri'],
+            'Ballari': ['Cantonment', 'Gandhi Nagar', 'Patel Nagar', 'Cowlbazaar', 'Infantry Road'],
+            'Vijayapura': ['Adarsh Nagar', 'Jalanagar', 'Ibrahimpur', 'Gandhi Chowk', 'Banjara Cross'],
+            'Hassan': ['Kuvempu Nagar', 'Vidya Nagar', 'RC Road', 'Salagame Road', 'Holenarasipura Road'],
+            'Mandya': ['VV Nagar', 'Subash Nagar', 'Ashok Nagar', 'Guttalu', 'Kallahalli'],
+            'Bidar': ['Old City', 'New Housing Board', 'Gandhi Gunj', 'Rampure Colony', 'Naubad'],
+            'Chikmagalur': ['Kalyan Nagar', 'Basavanahalli', 'Vijayapura', 'Ramanahalli', 'KM Road']
+        };
+
+        const locationsData = {
+            karnataka: {
+                header: 'Serving <span class="text-brand-600 font-bold">All Districts</span> in Karnataka',
+                sub: 'Select a district below to view specific operational areas.',
+                isInteractive: true,
+                districts: Object.keys(karnatakaDistricts)
+            },
+            bangalore: {
+                header: 'Serving <span class="text-brand-600 font-bold">12 Core Sectors</span> in Bengaluru',
+                sub: 'Highly accessible, localized staff across prominent enterprise clusters.',
+                areas: [
+                    'Whitefield', 'Koramangala', 'Indiranagar', 'Hebbal', 'Bellandur', 
+                    'Brookefield', 'HSR Layout', 'BTM Layout', 'Hoodi', 'Marathahalli', 
+                    'Jayanagar', 'JP Nagar'
+                ]
+            },
+            chennai: {
+                header: 'Serving <span class="text-brand-600 font-bold">10 Major Zones</span> in Chennai',
+                sub: 'Rapid resource deployment covering prime tech corridors and economic blocks.',
+                areas: [
+                    'Adyar', 'Velachery', 'T. Nagar', 'Anna Nagar', 'Guindy', 
+                    'OMR Road', 'Sholinganallur', 'Nungambakkam', 'Tambaram', 'Chromepet'
+                ]
+            },
+            hyderabad: {
+                header: 'Serving <span class="text-brand-600 font-bold">10 Core Tech Zones</span> in Hyderabad',
+                sub: 'Reliable facility and deep-cleaning support for enterprise tech hubs.',
+                areas: [
+                    'Gachibowli', 'HITEC City', 'Madhapur', 'Jubilee Hills', 'Banjara Hills', 
+                    'Kondapur', 'Secunderabad', 'Kukpally', 'Begumpet', 'Mainkonda'
+                ]
+            },
+            kochin: {
+                header: 'Serving <span class="text-brand-600 font-bold">10 Key Port & Commercial Zones</span> in Kochi',
+                sub: 'Optimized logistic labor and deep cleanup support across coastal zones.',
+                areas: [
+                    'Ernakulam', 'Kakkanad', 'Edappally', 'Fort Kochi', 'Marine Drive', 
+                    'Vyttila', 'Aluva', 'Palarivattom', 'Kalamassery', 'Tripunithura'
+                ]
+            },
+            mumbai: {
+                header: 'Serving <span class="text-brand-600 font-bold">11 Premium Sectors</span> in Mumbai',
+                sub: 'Full-service maintenance staff and security across the financial capital.',
+                areas: [
+                    'Bandra East/West', 'Andheri East/West', 'Colaba Sector', 'Worli Hub', 
+                    'Powai Valley', 'Thane West', 'Navi Mumbai', 'Juhu Area', 
+                    'Borivali', 'Dadar Zone', 'Lower Parel'
+                ]
+            },
+            pune: {
+                header: 'Serving <span class="text-brand-600 font-bold">10 IT & Industrial Areas</span> in Pune',
+                sub: 'Clean-room sanitization, loading labor, and structured facility crews.',
+                areas: [
+                    'Hinjewadi', 'Kharadi', 'Koregaon Park', 'Kalyani Nagar', 'Wakad Sector', 
+                    'Baner Hub', 'Kothrud Zone', 'Hadapsar', 'Viman Nagar', 'Shivaji Nagar'
+                ]
+            }
+        };
+
+        function switchLocation(key, element) {
+            // Update active styling of scroller buttons
+            document.querySelectorAll('.location-btn').forEach(btn => {
+                btn.classList.remove('border-brand-500', 'shadow-md');
+                btn.classList.add('border-transparent', 'shadow-sm');
+                btn.querySelector('div').classList.remove('text-brand-600');
+                btn.querySelector('div').classList.add('text-brand-900');
+            });
+
+            element.classList.add('border-brand-500', 'shadow-md');
+            element.classList.remove('border-transparent', 'shadow-sm');
+            element.querySelector('div').classList.add('text-brand-600');
+            element.querySelector('div').classList.remove('text-brand-900');
+
+            // Perform fade animation transition
+            const header = document.getElementById('serving-header');
+            const sub = document.getElementById('serving-sub');
+            const chipsContainer = document.getElementById('area-chips');
+
+            header.style.opacity = 0;
+            sub.style.opacity = 0;
+            chipsContainer.style.opacity = 0;
+
+            setTimeout(() => {
+                header.innerHTML = locationsData[key].header;
+                sub.innerHTML = locationsData[key].sub;
+
+                let areaHtml = '';
+                
+                if (locationsData[key].isInteractive) {
+                    // Render interactive district buttons for Karnataka
+                    locationsData[key].districts.forEach(dist => {
+                        areaHtml += `
+                        <button onclick="showDistrictAreas('${dist}')" class="bg-white hover:bg-brand-50 hover:border-brand-300 hover:text-brand-600 text-gray-700 font-bold py-3 px-4 rounded-xl border border-gray-200 transition-colors text-sm shadow-sm flex items-center justify-between w-full group focus:outline-none">
+                            ${dist} <i class="fa-solid fa-chevron-right text-xs text-gray-400 group-hover:text-brand-600 transition-colors"></i>
+                        </button>`;
+                    });
+                } else {
+                    // Render standard static area chips
+                    locationsData[key].areas.forEach(area => {
+                        areaHtml += `<div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">${area}</div>`;
+                    });
+                }
+                
+                chipsContainer.innerHTML = areaHtml;
+
+                header.style.opacity = 1;
+                sub.style.opacity = 1;
+                chipsContainer.style.opacity = 1;
+            }, 250);
+        }
+
+        function showDistrictAreas(districtName) {
+            const header = document.getElementById('serving-header');
+            const sub = document.getElementById('serving-sub');
+            const chipsContainer = document.getElementById('area-chips');
+
+            header.style.opacity = 0;
+            sub.style.opacity = 0;
+            chipsContainer.style.opacity = 0;
+
+            setTimeout(() => {
+                header.innerHTML = `Areas served in <span class="text-brand-600 font-bold">${districtName}</span>`;
+                sub.innerHTML = `<button onclick="switchLocation('karnataka', document.getElementById('btn-karnataka'))" class="text-brand-600 font-semibold hover:underline flex items-center gap-2 mt-1 focus:outline-none"><i class="fa-solid fa-arrow-left"></i> Back to Districts</button>`;
+
+                let areaHtml = '';
+                karnatakaDistricts[districtName].forEach(area => {
+                    areaHtml += `<div class="bg-gray-50 hover:bg-brand-50 hover:text-brand-600 hover:border-brand-200 text-gray-700 font-semibold py-3 px-4 rounded-xl border border-gray-200/60 transition-colors text-sm cursor-default">${area}</div>`;
+                });
+                
+                chipsContainer.innerHTML = areaHtml;
+
+                header.style.opacity = 1;
+                sub.style.opacity = 1;
+                chipsContainer.style.opacity = 1;
+            }, 250);
+        }
+
+        // ----------------------------------------------------
+        // WHATSAPP FORM HANDLER
+        // ----------------------------------------------------
+        function sendToWhatsApp(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('wa-name').value;
+            const phone = document.getElementById('wa-phone').value;
+            const email = document.getElementById('wa-email').value;
+            const comment = document.getElementById('wa-comment').value;
+
+            // Format message for WhatsApp URL
+            const text = `*New Enterprise Inquiry for SYMAAN*%0A%0A*Name:* ${encodeURIComponent(name)}%0A*Phone:* ${encodeURIComponent(phone)}%0A*Email:* ${encodeURIComponent(email)}%0A*Scope/Requirements:* ${encodeURIComponent(comment)}`;
+            
+            // Redirect to WhatsApp
+            window.open(`https://wa.me/916366861970?text=${text}`, '_blank');
+        }
+
+        // ----------------------------------------------------
+        // THREE.JS INTERACTIVE NETWORK BACKGROUND
+        // ----------------------------------------------------
+        function initThreeJS() {
+            const container = document.getElementById('webgl-container');
+            if (!container) return;
+
+            const scene = new THREE.Scene();
+            
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 150;
+
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Particles config
+            const particleCount = 150;
+            const geometry = new THREE.BufferGeometry();
+            const positions = new Float32Array(particleCount * 3);
+            const velocities = [];
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 400;     // x
+                positions[i + 1] = (Math.random() - 0.5) * 400; // y
+                positions[i + 2] = (Math.random() - 0.5) * 200; // z
+
+                velocities.push({
+                    x: (Math.random() - 0.5) * 0.2,
+                    y: (Math.random() - 0.5) * 0.2,
+                    z: (Math.random() - 0.5) * 0.2
+                });
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+            // Setup Material
+            const particleMaterial = new THREE.PointsMaterial({
+                color: 0x3b82f6, // Brand Blue
+                size: 2,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const particles = new THREE.Points(geometry, particleMaterial);
+            scene.add(particles);
+
+            // Lines material
+            const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0x2563eb,
+                transparent: true,
+                opacity: 0.15
+            });
+
+            // Mouse interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+
+            const windowHalfX = window.innerWidth / 2;
+            const windowHalfY = window.innerHeight / 2;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - windowHalfX) * 0.05;
+                mouseY = (event.clientY - windowHalfY) * 0.05;
+            });
+
+            // Animation Loop
+            let linesMesh;
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                targetX = mouseX * 0.5;
+                targetY = mouseY * 0.5;
+
+                // Move camera gently based on mouse
+                camera.position.x += (targetX - camera.position.x) * 0.02;
+                camera.position.y += (-targetY - camera.position.y) * 0.02;
+                camera.lookAt(scene.position);
+
+                // Update particle positions
+                const positions = particles.geometry.attributes.position.array;
+                
+                // Draw lines between close particles
+                const linePositions = [];
+
+                for (let i = 0; i < particleCount; i++) {
+                    const i3 = i * 3;
+                    
+                    // Move
+                    positions[i3] += velocities[i].x;
+                    positions[i3 + 1] += velocities[i].y;
+                    positions[i3 + 2] += velocities[i].z;
+
+                    // Bounce off invisible boundaries
+                    if(positions[i3] > 200 || positions[i3] < -200) velocities[i].x *= -1;
+                    if(positions[i3+1] > 200 || positions[i3+1] < -200) velocities[i].y *= -1;
+                    if(positions[i3+2] > 100 || positions[i3+2] < -100) velocities[i].z *= -1;
+
+                    // Check distance to other particles to draw lines
+                    for(let j = i + 1; j < particleCount; j++) {
+                        const j3 = j * 3;
+                        const dx = positions[i3] - positions[j3];
+                        const dy = positions[i3+1] - positions[j3+1];
+                        const dz = positions[i3+2] - positions[j3+2];
+                        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+                        if(dist < 40) {
+                            linePositions.push(
+                                positions[i3], positions[i3+1], positions[i3+2],
+                                positions[j3], positions[j3+1], positions[j3+2]
+                            );
+                        }
+                    }
+                }
+
+                particles.geometry.attributes.position.needsUpdate = true;
+
+                // Update lines
+                if (linesMesh) scene.remove(linesMesh);
+                
+                if (linePositions.length > 0) {
+                    const lineGeo = new THREE.BufferGeometry();
+                    lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePositions, 3));
+                    linesMesh = new THREE.LineSegments(lineGeo, lineMaterial);
+                    scene.add(linesMesh);
+                }
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+
+        // Initialize ThreeJS when DOM is ready
+        document.addEventListener('DOMContentLoaded', initThreeJS);
+
+        // ----------------------------------------------------
+        // UI INTERACTIONS (Navbar, Scroll Reveal)
+        // ----------------------------------------------------
+        const navContainer = document.getElementById('nav-container');
+        const navBrandText = document.getElementById('nav-brand-text');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            if (window.scrollY > 50) {
+                if (navContainer) {
+                    navContainer.classList.remove('bg-white/10', 'border-white/20', 'py-3');
+                    navContainer.classList.add('bg-white/95', 'border-gray-200', 'py-2');
+                }
+                if (navBrandText) {
+                    navBrandText.classList.remove('text-white');
+                    navBrandText.classList.add('text-brand-900');
+                }
+                if (mobileMenuBtn) {
+                    mobileMenuBtn.classList.remove('text-white');
+                    mobileMenuBtn.classList.add('text-brand-900');
+                }
+                
+                navLinks.forEach(link => {
+                    link.classList.remove('text-gray-200');
+                    link.classList.add('text-gray-600', 'hover:text-brand-600');
+                });
+            } else {
+                if (navContainer) {
+                    navContainer.classList.add('bg-white/10', 'border-white/20', 'py-3');
+                    navContainer.classList.remove('bg-white/95', 'border-gray-200', 'py-2');
+                }
+                if (navBrandText) {
+                    navBrandText.classList.add('text-white');
+                    navBrandText.classList.remove('text-brand-900');
+                }
+                if (mobileMenuBtn) {
+                    mobileMenuBtn.classList.add('text-white');
+                    mobileMenuBtn.classList.remove('text-brand-900');
+                }
+                
+                navLinks.forEach(link => {
+                    link.classList.add('text-gray-200');
+                    link.classList.remove('text-gray-600', 'hover:text-brand-600');
+                });
+            }
+        });
+
+        // Mobile Menu Toggle
+        const btn = document.getElementById('mobile-menu-btn');
+        const menu = document.getElementById('mobile-menu');
+
+        if (btn && menu) {
+            btn.addEventListener('click', () => {
+                menu.classList.toggle('hidden');
+            });
+
+            menu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    menu.classList.add('hidden');
+                });
+            });
+        }
+
+        // Scroll Reveal Animation Setup
+        const revealElements = document.querySelectorAll('.reveal');
+        
+        const revealObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { root: null, threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+        revealElements.forEach(el => revealObserver.observe(el));
+        
+        // Trigger initial reveal on load
+        setTimeout(() => {
+            revealElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if(rect.top < window.innerHeight) {
+                    el.classList.add('active');
+                }
+            });
+        }, 100);
+
+    </script>
+</body>
+</html>
